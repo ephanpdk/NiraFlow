@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>NiraFlow — Decision Support System</title>
+  <title>NiraFlow — M/M/c Queue Simulation</title>
   <link rel="stylesheet" href="style.css" />
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
 </head>
@@ -16,41 +16,98 @@
         <span class="logo-icon">🍬</span>
         <div>
           <h1>NiraFlow</h1>
-          <p>Decision Support System — Antrean Stokastik Produksi Gula Aren</p>
+          <p>Pemodelan Antrean Stokastik M/M/c — Alur Produksi Gula Aren Higienis</p>
         </div>
+      </div>
+      <div class="header-badges">
+        <span class="badge badge-blue">Model M/M/c</span>
+        <span class="badge badge-orange">DESS · SimPy</span>
+        <span class="badge badge-green">SubCPMK01</span>
       </div>
     </div>
   </header>
 
   <main class="container">
 
+    <!-- Methodology Pipeline -->
+    <section class="card methodology-card">
+      <h2 class="section-title">📚 Tahapan Metodologi — SubCPMK01</h2>
+      <div class="pipeline">
+        <div class="stage">
+          <div class="stage-num">1</div>
+          <div class="stage-name">Analisis Kebutuhan</div>
+          <div class="stage-desc">Pengumpulan data interarrival time & service time dari petani aren</div>
+        </div>
+        <div class="stage-arrow">→</div>
+        <div class="stage">
+          <div class="stage-num">2</div>
+          <div class="stage-name">Perancangan</div>
+          <div class="stage-desc">Flow diagram M/M/c: λ (laju kedatangan), μ (laju layanan), c (jumlah tungku)</div>
+        </div>
+        <div class="stage-arrow">→</div>
+        <div class="stage">
+          <div class="stage-num">3</div>
+          <div class="stage-name">Implementasi</div>
+          <div class="stage-desc">DESS via SimPy + FastAPI backend; distribusi stokastik via scipy.stats</div>
+        </div>
+        <div class="stage-arrow">→</div>
+        <div class="stage active-stage">
+          <div class="stage-num">4</div>
+          <div class="stage-name">Evaluasi</div>
+          <div class="stage-desc">Output analysis: utilisasi server ρ, rata-rata waktu tunggu Wq, throughput</div>
+        </div>
+      </div>
+
+      <div class="model-info">
+        <div class="model-param">
+          <span class="param-sym">λ</span>
+          <span class="param-label">Laju Kedatangan Nira<br/><small>1 / mean_interarrival</small></span>
+        </div>
+        <div class="model-sep">·</div>
+        <div class="model-param">
+          <span class="param-sym">μ</span>
+          <span class="param-label">Laju Layanan Tungku<br/><small>1 / mean_service_time</small></span>
+        </div>
+        <div class="model-sep">·</div>
+        <div class="model-param">
+          <span class="param-sym">c</span>
+          <span class="param-label">Jumlah Server (Tungku)<br/><small>jumlah_tungku aktif</small></span>
+        </div>
+        <div class="model-sep">·</div>
+        <div class="model-param">
+          <span class="param-sym">ρ</span>
+          <span class="param-label">Utilisasi Server<br/><small>λ / (c · μ)</small></span>
+        </div>
+      </div>
+    </section>
+
     <!-- Input Form -->
     <section class="card form-card">
-      <h2 class="section-title">⚙️ Parameter Simulasi</h2>
+      <h2 class="section-title">⚙️ Parameter Simulasi M/M/c</h2>
       <form id="simForm" novalidate>
         <div class="form-grid">
 
           <div class="field">
-            <label for="jumlah_tungku">Jumlah Tungku Aktif (server)</label>
+            <label for="jumlah_tungku">Jumlah Tungku Aktif — <em>c</em> (server)</label>
             <input type="number" id="jumlah_tungku" name="jumlah_tungku"
               placeholder="cth: 3" min="1" step="1" value="3" required />
-            <span class="field-hint">Integer ≥ 1</span>
+            <span class="field-hint">Integer ≥ 1 | Variabel c pada model M/M/c</span>
             <span class="field-error" id="err_tungku"></span>
           </div>
 
           <div class="field">
-            <label for="mean_interarrival">Rata-rata Antar Kedatangan Nira (menit)</label>
+            <label for="mean_interarrival">Rata-rata Antar Kedatangan Nira — <em>1/λ</em> (menit)</label>
             <input type="number" id="mean_interarrival" name="mean_interarrival"
               placeholder="cth: 15.5" min="0.1" step="0.1" value="15.5" required />
-            <span class="field-hint">Waktu antar kedatangan batch nira (menit)</span>
+            <span class="field-hint">Waktu antar kedatangan batch nira dari ladang (distribusi eksponensial)</span>
             <span class="field-error" id="err_interarrival"></span>
           </div>
 
           <div class="field">
-            <label for="mean_service">Rata-rata Waktu Masak per Batch (menit)</label>
+            <label for="mean_service">Rata-rata Waktu Masak per Batch — <em>1/μ</em> (menit)</label>
             <input type="number" id="mean_service" name="mean_service"
               placeholder="cth: 45.0" min="0.1" step="0.1" value="45.0" required />
-            <span class="field-hint">Durasi rata-rata masak per tungku (menit)</span>
+            <span class="field-hint">Durasi rata-rata masak per tungku (distribusi eksponensial)</span>
             <span class="field-error" id="err_service"></span>
           </div>
 
@@ -62,10 +119,25 @@
             <span class="field-error" id="err_waktu"></span>
           </div>
 
+          <div class="field field-highlight">
+            <label for="fermentation_threshold">
+              ⚠️ Batas Maksimal Waktu Tunggu Nira (menit)
+              <span class="label-optional">opsional</span>
+            </label>
+            <input type="number" id="fermentation_threshold" name="fermentation_threshold"
+              placeholder="cth: 30" min="1" step="1" />
+            <span class="field-hint">Nira akan asam/fermentasi jika menunggu melebihi nilai ini. Kosongkan jika tidak diketahui.</span>
+            <span class="field-error" id="err_ferm"></span>
+          </div>
+
+        </div>
+
+        <div class="form-note">
+          Sistem akan otomatis membandingkan konfigurasi <strong>c = 1 sampai c+3 tungku</strong> untuk menemukan jumlah optimal.
         </div>
 
         <button type="submit" class="btn-simulate" id="btnSimulate">
-          <span id="btnText">▶ Jalankan Simulasi</span>
+          <span id="btnText">▶ Jalankan Simulasi M/M/c</span>
           <span id="btnSpinner" class="spinner hidden"></span>
         </button>
 
@@ -76,8 +148,8 @@
     <div id="loadingOverlay" class="loading-overlay hidden">
       <div class="loading-box">
         <div class="big-spinner"></div>
-        <p>Simulasi sedang berjalan...</p>
-        <small>Mesin sedang menghitung distribusi stokastik</small>
+        <p>Simulasi M/M/c sedang berjalan...</p>
+        <small>Menghitung distribusi stokastik & membandingkan skenario tungku</small>
       </div>
     </div>
 
@@ -87,23 +159,23 @@
       <button onclick="dismissError()">✕</button>
     </div>
 
-    <!-- Results -->
+    <!-- ===== RESULTS ===== -->
     <section id="results" class="results-section hidden">
 
-      <h2 class="section-title">📊 Hasil Simulasi</h2>
+      <h2 class="section-title">📊 Hasil Simulasi — Tahap 4: Evaluasi</h2>
 
       <!-- Metric Cards -->
       <div class="metrics-grid">
         <div class="metric-card util">
           <div class="metric-icon">🔥</div>
           <div class="metric-value" id="val_utilization">—</div>
-          <div class="metric-label">Utilisasi Tungku</div>
+          <div class="metric-label">Utilisasi Tungku (ρ)</div>
           <div class="metric-sub">Rata-rata server aktif</div>
         </div>
         <div class="metric-card wait">
           <div class="metric-icon">⏱️</div>
           <div class="metric-value" id="val_wait">—</div>
-          <div class="metric-label">Rata-rata Waktu Tunggu</div>
+          <div class="metric-label">Rata-rata Waktu Tunggu (Wq)</div>
           <div class="metric-sub">Nira menunggu di antrean</div>
         </div>
         <div class="metric-card throughput">
@@ -114,36 +186,207 @@
         </div>
       </div>
 
-      <!-- Charts -->
+      <!-- Fermentation Alert -->
+      <div id="fermAlert" class="ferm-alert hidden">
+        <div class="ferm-icon" id="fermIcon">⚠️</div>
+        <div>
+          <div class="ferm-label" id="fermLabel"></div>
+          <div class="ferm-msg" id="fermMsg"></div>
+        </div>
+      </div>
+
+      <!-- Evaluation Box -->
+      <div id="evaluationBox" class="eval-box">
+        <h3>🔍 Interpretasi Otomatis Hasil Simulasi</h3>
+        <div class="eval-grid">
+          <div class="eval-item">
+            <div class="eval-badge" id="evalBadge">—</div>
+            <div class="eval-content">
+              <div class="eval-title" id="evalTitle">Status Utilisasi</div>
+              <div class="eval-msg" id="evalMsg"></div>
+            </div>
+          </div>
+          <div class="eval-rec">
+            <span class="rec-icon">💡</span>
+            <span id="evalRec"></span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Charts Row 1 -->
       <div class="charts-grid">
         <div class="card chart-card">
-          <h3>📈 Panjang Antrean Nira per Menit</h3>
-          <p class="chart-desc">Distribusi waktu antrean selama durasi simulasi</p>
+          <h3>📈 Time-Series Panjang Antrean Nira</h3>
+          <p class="chart-desc">Dinamika antrean per menit sepanjang simulasi berlangsung</p>
           <div class="chart-wrapper">
             <canvas id="lineChart"></canvas>
           </div>
         </div>
         <div class="card chart-card">
           <h3>📊 Utilisasi vs Idle Time Tungku</h3>
-          <p class="chart-desc">Persentase waktu aktif vs idle seluruh kapasitas tungku</p>
+          <p class="chart-desc">Persentase waktu aktif vs idle seluruh kapasitas tungku terpilih</p>
           <div class="chart-wrapper">
             <canvas id="barChart"></canvas>
           </div>
         </div>
       </div>
 
-      <!-- Raw data note -->
+      <!-- Comparison Section -->
+      <div class="card comparison-card">
+        <h3>⚖️ Perbandingan Skenario Jumlah Tungku (M/M/c)</h3>
+        <p class="chart-desc">Simulasi dijalankan untuk setiap nilai c — temukan konfigurasi paling optimal</p>
+
+        <div class="chart-wrapper chart-tall">
+          <canvas id="compChart"></canvas>
+        </div>
+
+        <div class="table-wrapper">
+          <table id="compTable" class="comp-table">
+            <thead>
+              <tr>
+                <th>Jumlah Tungku (c)</th>
+                <th>Utilisasi (%)</th>
+                <th>Idle (%)</th>
+                <th>Waktu Tunggu (mnt)</th>
+                <th>Throughput (batch)</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody id="compTableBody"></tbody>
+          </table>
+        </div>
+      </div>
+
       <p class="note">
-        ⚠️ Seluruh kalkulasi probabilistik dilakukan di backend Python (SimPy + scipy.stats).
-        UI hanya menampilkan angka final untuk menjaga akurasi komputasi floating-point.
+        ⚠️ Seluruh kalkulasi probabilistik (λ, μ, distribusi eksponensial) dilakukan di backend Python (SimPy + scipy.stats). UI hanya menampilkan angka final untuk menjaga akurasi floating-point — sesuai NFR-02.
       </p>
 
+    </section>
+
+    <!-- ===== PPT GUIDE ===== -->
+    <section class="card ppt-section">
+      <div class="ppt-header">
+        <div>
+          <h2 class="section-title" style="margin-bottom:4px">🎓 Panduan Materi Presentasi (PPT)</h2>
+          <p class="ppt-subtitle">Struktur slide yang disarankan untuk mempresentasikan proyek ini sesuai SubCPMK01</p>
+        </div>
+        <button class="btn-print" onclick="window.print()">🖨️ Cetak Panduan</button>
+      </div>
+
+      <div class="slides-grid">
+
+        <div class="slide-card">
+          <div class="slide-num">Slide 1</div>
+          <div class="slide-title">Halaman Judul</div>
+          <ul class="slide-points">
+            <li>Judul: <em>"Pemodelan Antrean Stokastik M/M/c pada Alur Produksi Gula Aren Higienis untuk Minimasi Idle Time"</em></li>
+            <li>Nama mahasiswa, NIM, program studi</li>
+            <li>Mata kuliah & nama dosen pembimbing</li>
+            <li>Tahun akademik & institusi</li>
+          </ul>
+          <div class="slide-tip">💡 Gunakan visual foto petani nira atau tungku masak sebagai background</div>
+        </div>
+
+        <div class="slide-card">
+          <div class="slide-num">Slide 2</div>
+          <div class="slide-title">Latar Belakang & Research Gap</div>
+          <ul class="slide-points">
+            <li>Industri gula aren UMKM: proses masih manual dan tradisional</li>
+            <li>Masalah utama: nira dapat fermentasi (asam) jika terlalu lama menunggu tungku kosong</li>
+            <li>Research Gap: belum ada model simulasi matematis yang menghitung bottleneck transisi nira → tungku pada skala UMKM</li>
+            <li>Solusi yang diusulkan: pendekatan DESS dengan model antrean M/M/c</li>
+          </ul>
+          <div class="slide-tip">💡 Sertakan foto/ilustrasi nira aren dan diagram masalah bottleneck</div>
+        </div>
+
+        <div class="slide-card">
+          <div class="slide-num">Slide 3</div>
+          <div class="slide-title">Rumusan Masalah & Tujuan</div>
+          <ul class="slide-points">
+            <li><strong>Rumusan:</strong> Berapa jumlah tungku (c) optimal agar idle time minimal dan waktu tunggu nira tidak melebihi batas fermentasi?</li>
+            <li><strong>Tujuan:</strong> Membangun aplikasi simulasi DESS yang memenuhi kriteria fungsional & kinerja (SubCPMK01)</li>
+            <li>Batasan: simulasi berbasis distribusi eksponensial (model M/M/c), skala 1 hari kerja (480 menit)</li>
+          </ul>
+          <div class="slide-tip">💡 Tampilkan persamaan utilisasi ρ = λ / (c·μ) sebagai inti masalah</div>
+        </div>
+
+        <div class="slide-card">
+          <div class="slide-num">Slide 4</div>
+          <div class="slide-title">Metodologi — 4 Tahap SubCPMK01</div>
+          <ul class="slide-points">
+            <li><strong>1. Analisis Kebutuhan:</strong> Wawancara petani → data interarrival time & service time nira</li>
+            <li><strong>2. Perancangan:</strong> Flow diagram M/M/c; definisi parameter λ, μ, c; penentuan distribusi</li>
+            <li><strong>3. Implementasi:</strong> Python (SimPy, FastAPI, scipy.stats) + Frontend (HTML/JS/Chart.js)</li>
+            <li><strong>4. Evaluasi:</strong> Output analysis — server utilization ρ, Wq (rata-rata waktu tunggu), throughput</li>
+          </ul>
+          <div class="slide-tip">💡 Gunakan diagram pipeline 4 tahap dengan panah seperti yang ada di web ini</div>
+        </div>
+
+        <div class="slide-card">
+          <div class="slide-num">Slide 5</div>
+          <div class="slide-title">Model Antrean M/M/c — Landasan Teori</div>
+          <ul class="slide-points">
+            <li><strong>M/M/c:</strong> Markovian arrival, Markovian service, c servers (tungku)</li>
+            <li>λ = laju kedatangan nira (batch/menit) = 1 / mean_interarrival</li>
+            <li>μ = laju layanan tungku (batch/menit) = 1 / mean_service_time</li>
+            <li>ρ = utilisasi server = λ / (c·μ) → stabil jika ρ &lt; 1</li>
+            <li>Syarat: ρ &lt; 1 agar sistem tidak collapse (antrian tak terbatas)</li>
+            <li>Distribusi: Eksponensial (scipy.stats) — bukan pseudo-random bawaan Python</li>
+          </ul>
+          <div class="slide-tip">💡 Sertakan flow diagram: Nira Datang → Antrean → Tungku Masak → Output</div>
+        </div>
+
+        <div class="slide-card">
+          <div class="slide-num">Slide 6</div>
+          <div class="slide-title">Implementasi — Arsitektur Sistem</div>
+          <ul class="slide-points">
+            <li><strong>Frontend:</strong> HTML5 + Vanilla JS + Chart.js — form input, visualisasi grafik</li>
+            <li><strong>Backend:</strong> Python FastAPI — REST API endpoint POST /api/simulate</li>
+            <li><strong>Engine:</strong> SimPy (Discrete Event Simulation) + scipy.stats (distribusi eksponensial)</li>
+            <li>Alur: Form → JSON POST → FastAPI → SimPy Engine → JSON Response → Chart.js</li>
+            <li>Asynchronous: UI tidak freeze saat simulasi berjalan (loading spinner)</li>
+          </ul>
+          <div class="slide-tip">💡 Screenshot arsitektur / diagram alur data dari SRS-SAD di sini</div>
+        </div>
+
+        <div class="slide-card">
+          <div class="slide-num">Slide 7</div>
+          <div class="slide-title">Hasil Simulasi & Analisis</div>
+          <ul class="slide-points">
+            <li>Screenshot metric cards: utilisasi %, rata-rata Wq, total throughput</li>
+            <li>Grafik time-series panjang antrean nira per menit</li>
+            <li>Tabel perbandingan c = 1 s/d c+3: temukan utilisasi optimal (70–90%)</li>
+            <li>Status fermentasi: apakah Wq &lt; batas asam nira?</li>
+            <li>Contoh: dengan c=3 tungku, ρ=82%, Wq=5 mnt → AMAN & OPTIMAL</li>
+          </ul>
+          <div class="slide-tip">💡 Screenshot langsung dari tampilan web NiraFlow setelah simulasi dijalankan</div>
+        </div>
+
+        <div class="slide-card">
+          <div class="slide-num">Slide 8</div>
+          <div class="slide-title">Evaluasi, Kesimpulan & Rekomendasi</div>
+          <ul class="slide-points">
+            <li><strong>Evaluasi:</strong> Aplikasi memenuhi FR-01 s/d FR-05 dan NFR-01 s/d NFR-02 dari SRS</li>
+            <li><strong>Kesimpulan:</strong> Model M/M/c terbukti dapat menentukan jumlah tungku optimal secara matematis</li>
+            <li><strong>Rekomendasi:</strong> Gunakan c=X tungku untuk utilisasi optimal (70–90%) tanpa risiko fermentasi nira</li>
+            <li><strong>SubCPMK01 terpenuhi:</strong> 4 tahapan (analisis, perancangan, implementasi, evaluasi) berhasil diimplementasikan pada platform web</li>
+            <li>Saran pengembangan: distribusi non-eksponensial (Erlang/Gamma) untuk model M/G/c</li>
+          </ul>
+          <div class="slide-tip">💡 Akhiri dengan tabel pemenuhan FR & NFR dari dokumen SRS sebagai bukti evaluasi</div>
+        </div>
+
+      </div>
+
+      <div class="ppt-footer-note">
+        📌 Panduan ini mengikuti struktur dokumen SRS & SAD NiraFlow dan tujuan SubCPMK01.
+        Sesuaikan data hasil simulasi aktual dari web ini ke dalam slide 7 & 8 untuk hasil terbaik.
+      </div>
     </section>
 
   </main>
 
   <footer class="footer">
-    <p>NiraFlow &copy; 2025 — Discrete Event Simulation Engine berbasis SimPy & FastAPI</p>
+    <p>NiraFlow &copy; 2025 — Model M/M/c · Discrete Event Simulation Engine · SimPy + FastAPI + scipy.stats</p>
   </footer>
 
   <script src="app.js"></script>
