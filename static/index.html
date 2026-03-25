@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>NiraFlow — Decision Support System</title>
+  <link rel="stylesheet" href="style.css" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+</head>
+<body>
+
+  <!-- Header -->
+  <header class="header">
+    <div class="header-inner">
+      <div class="logo">
+        <span class="logo-icon">🍬</span>
+        <div>
+          <h1>NiraFlow</h1>
+          <p>Decision Support System — Antrean Stokastik Produksi Gula Aren</p>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main class="container">
+
+    <!-- Input Form -->
+    <section class="card form-card">
+      <h2 class="section-title">⚙️ Parameter Simulasi</h2>
+      <form id="simForm" novalidate>
+        <div class="form-grid">
+
+          <div class="field">
+            <label for="jumlah_tungku">Jumlah Tungku Aktif (server)</label>
+            <input type="number" id="jumlah_tungku" name="jumlah_tungku"
+              placeholder="cth: 3" min="1" step="1" value="3" required />
+            <span class="field-hint">Integer ≥ 1</span>
+            <span class="field-error" id="err_tungku"></span>
+          </div>
+
+          <div class="field">
+            <label for="mean_interarrival">Rata-rata Antar Kedatangan Nira (menit)</label>
+            <input type="number" id="mean_interarrival" name="mean_interarrival"
+              placeholder="cth: 15.5" min="0.1" step="0.1" value="15.5" required />
+            <span class="field-hint">Waktu antar kedatangan batch nira (menit)</span>
+            <span class="field-error" id="err_interarrival"></span>
+          </div>
+
+          <div class="field">
+            <label for="mean_service">Rata-rata Waktu Masak per Batch (menit)</label>
+            <input type="number" id="mean_service" name="mean_service"
+              placeholder="cth: 45.0" min="0.1" step="0.1" value="45.0" required />
+            <span class="field-hint">Durasi rata-rata masak per tungku (menit)</span>
+            <span class="field-error" id="err_service"></span>
+          </div>
+
+          <div class="field">
+            <label for="waktu_simulasi">Durasi Simulasi (menit)</label>
+            <input type="number" id="waktu_simulasi" name="waktu_simulasi"
+              placeholder="cth: 480" min="1" step="1" value="480" required />
+            <span class="field-hint">1 hari kerja = 480 menit</span>
+            <span class="field-error" id="err_waktu"></span>
+          </div>
+
+        </div>
+
+        <button type="submit" class="btn-simulate" id="btnSimulate">
+          <span id="btnText">▶ Jalankan Simulasi</span>
+          <span id="btnSpinner" class="spinner hidden"></span>
+        </button>
+
+      </form>
+    </section>
+
+    <!-- Loading overlay -->
+    <div id="loadingOverlay" class="loading-overlay hidden">
+      <div class="loading-box">
+        <div class="big-spinner"></div>
+        <p>Simulasi sedang berjalan...</p>
+        <small>Mesin sedang menghitung distribusi stokastik</small>
+      </div>
+    </div>
+
+    <!-- Error Banner -->
+    <div id="errorBanner" class="error-banner hidden">
+      <span id="errorMsg"></span>
+      <button onclick="dismissError()">✕</button>
+    </div>
+
+    <!-- Results -->
+    <section id="results" class="results-section hidden">
+
+      <h2 class="section-title">📊 Hasil Simulasi</h2>
+
+      <!-- Metric Cards -->
+      <div class="metrics-grid">
+        <div class="metric-card util">
+          <div class="metric-icon">🔥</div>
+          <div class="metric-value" id="val_utilization">—</div>
+          <div class="metric-label">Utilisasi Tungku</div>
+          <div class="metric-sub">Rata-rata server aktif</div>
+        </div>
+        <div class="metric-card wait">
+          <div class="metric-icon">⏱️</div>
+          <div class="metric-value" id="val_wait">—</div>
+          <div class="metric-label">Rata-rata Waktu Tunggu</div>
+          <div class="metric-sub">Nira menunggu di antrean</div>
+        </div>
+        <div class="metric-card throughput">
+          <div class="metric-icon">✅</div>
+          <div class="metric-value" id="val_throughput">—</div>
+          <div class="metric-label">Total Nira Diproses</div>
+          <div class="metric-sub">Batch berhasil dimasak</div>
+        </div>
+      </div>
+
+      <!-- Charts -->
+      <div class="charts-grid">
+        <div class="card chart-card">
+          <h3>📈 Panjang Antrean Nira per Menit</h3>
+          <p class="chart-desc">Distribusi waktu antrean selama durasi simulasi</p>
+          <div class="chart-wrapper">
+            <canvas id="lineChart"></canvas>
+          </div>
+        </div>
+        <div class="card chart-card">
+          <h3>📊 Utilisasi vs Idle Time Tungku</h3>
+          <p class="chart-desc">Persentase waktu aktif vs idle seluruh kapasitas tungku</p>
+          <div class="chart-wrapper">
+            <canvas id="barChart"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <!-- Raw data note -->
+      <p class="note">
+        ⚠️ Seluruh kalkulasi probabilistik dilakukan di backend Python (SimPy + scipy.stats).
+        UI hanya menampilkan angka final untuk menjaga akurasi komputasi floating-point.
+      </p>
+
+    </section>
+
+  </main>
+
+  <footer class="footer">
+    <p>NiraFlow &copy; 2025 — Discrete Event Simulation Engine berbasis SimPy & FastAPI</p>
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html>

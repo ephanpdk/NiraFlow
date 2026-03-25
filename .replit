@@ -21,13 +21,13 @@ args = "Start application"
 name = "Start application"
 author = "agent"
 
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "python py.py"
-waitForPort = 5000
-
 [workflows.workflow.metadata]
 outputType = "webview"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "python main.py"
+waitForPort = 5000
 
 [[ports]]
 localPort = 5000
@@ -35,4 +35,4 @@ externalPort = 80
 
 [deployment]
 deploymentTarget = "autoscale"
-run = ["python", "py.py"]
+run = ["python", "main.py"]
